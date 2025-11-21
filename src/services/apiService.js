@@ -85,16 +85,29 @@ export const scanDocumentWithGemini = async (history = [], newMessage = '', file
 
         const result = await response.json();
 
-        // Check if result has required fields
-        if (!result || (!result.text && !result.data)) {
-            throw new Error('Response thiếu fields "text" hoặc "data". Kiểm tra format trong workflow.');
+        // Handle different response formats from n8n:
+        // Format 1: {text: "...", data: [...]} - ideal format
+        // Format 2: [...] - direct array (current n8n setup)
+
+        let extractedData = [];
+        let responseText = '';
+
+        if (Array.isArray(result)) {
+            // n8n trả về array trực tiếp
+            extractedData = result;
+            responseText = formatDataAsText(result);
+        } else if (result && typeof result === 'object') {
+            // n8n trả về object {text, data}
+            extractedData = result.data || [];
+            responseText = result.text || formatDataAsText(result.data);
+        } else {
+            throw new Error('Response format không hợp lệ. Cần array hoặc {text, data}');
         }
 
-        // Backend returns: { data: [...], text: "..." } or { data: [...] }
         // Ensure we always return both text and data
         return {
-            text: result.text || formatDataAsText(result.data),
-            data: result.data || []
+            text: responseText,
+            data: extractedData
         };
 
     } catch (error) {
