@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Paperclip, Bot, User, Plus, Loader2, Image as ImageIcon, CheckCircle } from 'lucide-react';
-import { sendMessageToGemini } from '../services/geminiService';
+import { sendMessageToGemini } from '../services/apiService';
 
 const AIChatSidebar = ({ isOpen, onClose, onImportData }) => {
     const [messages, setMessages] = useState([
         {
             id: 1,
             role: 'model',
-            text: 'Hệ thống sẵn sàng. Vui lòng tải lên ảnh hoặc dán nội dung phân công.',
+            text: '🤖 Trợ lý AI đã sẵn sàng!\n\nVui lòng:\n• Tải lên ảnh phân công giảng dạy\n• Hoặc nhập/dán nội dung văn bản\n\nTôi sẽ trích xuất và giúp bạn chỉnh sửa dữ liệu.',
             data: []
         }
     ]);
