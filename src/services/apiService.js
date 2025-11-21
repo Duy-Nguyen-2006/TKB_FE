@@ -5,7 +5,7 @@
  */
 
 // Backend webhook URL for AI processing
-const WEBHOOK_URL = "http://n8n.genz-ai.click:5678/webhook/phan-cong";
+const WEBHOOK_URL = "https://7jk103q70xnk.ezbase.vn/webhook/phan-cong";
 
 /**
  * Scans document/text input using backend AI webhook
