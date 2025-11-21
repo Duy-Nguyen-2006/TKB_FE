@@ -30,9 +30,8 @@ const AIChatModal = ({ isOpen, onClose, onImportData }) => {
 
         const userText = inputValue.trim().toLowerCase();
 
-        // Auto-import logic: Check if user is confirming previous data
-        const agreementKeywords = ['ok', 'đúng', 'dung', 'chuẩn', 'chuan', 'đồng ý', 'dong y', 'được', 'duoc', 'nhập', 'nhap', 'lưu', 'luu', 'yes'];
-        const isAgreement = agreementKeywords.some(kw => userText.includes(kw));
+        // Auto-import logic: ONLY accept exact "OK" (case insensitive)
+        const isAgreement = userText === 'ok';
 
         // Find the last AI message with data
         const lastAiMsgWithData = [...messages].reverse().find(m => m.role === 'model' && m.data && m.data.length > 0);

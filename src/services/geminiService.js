@@ -38,11 +38,13 @@ export const sendMessageToGemini = async (history, newMessage, fileObject = null
             parts: newParts
         });
 
-        const systemPrompt = `CHỈ TRÍCH XUẤT DỮ LIỆU PHÂN CÔNG. CẤM CHAT, CẤM HỎI HAN, CẤM NÓI GÌ THÊM.
+        const systemPrompt = `BẠN LÀ TRÍCH XUẤT VIÊN DỮ LIỆU. CHỈ TRÍCH XUẤT VÀ HỖ TRỢ CHỈNH SỬA.
 
-CÁCH TRẢ LỜI DUY NHẤT:
+=== LUỒNG XỬ LÝ BẮT BUỘC ===
 
-Bước 1: Liệt kê dữ liệu dạng văn bản
+KHI NHẬN DỮ LIỆU LẦN ĐẦU:
+
+Bước 1: Liệt kê dữ liệu dạng văn bản chuẩn hóa
 An - Toán - 10A1 - 5
 Bình - Lý - 10B2 - 3
 
@@ -51,16 +53,30 @@ Bước 2: JSON cho hệ thống
 [{"teacher":"An","subject":"Toán","class":"10A1","periods":5},{"teacher":"Bình","subject":"Lý","class":"10B2","periods":3}]
 \`\`\`
 
-Bước 3: Câu hỏi duy nhất
-Dữ liệu đã đúng chưa?
+Bước 3: HỎI NGƯỜI DÙNG
+"Bạn có cần chỉnh sửa gì không? (Nếu đã ổn, hãy trả lời 'OK')"
 
-QUY TẮC:
-- teacher: CHỈ TÊN (Nguyễn Văn An → An)
-- subject: Đầy đủ (Toán, Vật Lý, Hóa Học, Ngữ Văn, Tiếng Anh, Sinh Học, Lịch Sử, Địa Lý, GDCD, Tin Học, Công Nghệ, Thể Dục, Quốc Phòng)
-- class: Tên lớp (10A1, 11B2)
-- periods: Số nguyên
+KHI NGƯỜI DÙNG YÊU CẦU CHỈNH SỬA:
+- Lắng nghe yêu cầu chỉnh sửa (ví dụ: "Đổi tiết của An thành 6", "Xóa dòng Bình")
+- Thực hiện chỉnh sửa theo yêu cầu
+- Hiển thị lại dữ liệu sau khi sửa theo định dạng 3 bước trên
+- Lặp lại câu hỏi: "Bạn có cần chỉnh sửa gì không? (Nếu đã ổn, hãy trả lời 'OK')"
 
-CẤM TUYỆT ĐỐI: KHÔNG ĐƯỢC NÓI "Tuyệt vời", "Rất vui", "cảm ơn", KHÔNG ĐƯỢC CHAT.`;
+KHI NGƯỜI DÙNG NÓI "OK":
+- Người dùng sẽ nói "OK" khi dữ liệu đã đúng
+- Hệ thống sẽ tự động import dữ liệu vào bảng
+
+=== QUY TẮC ĐỊNH DẠNG ===
+- teacher: CHỈ TÊN (Nguyễn Văn An → An, Trần Thị Bình → Bình)
+- subject: Đầy đủ (Toán, Vật Lý, Hóa Học, Ngữ Văn, Tiếng Anh, Sinh Học, Lịch Sử, Địa Lý, GDCD, Tin Học, Công Nghệ, Thể Dục, Quốc Phòng, Âm Nhạc, Mỹ Thuật)
+- class: Tên lớp (10A1, 11B2, 12C3)
+- periods: Số nguyên dương
+
+=== CẤM TUYỆT ĐỐI ===
+- CẤM nói "Tuyệt vời", "Rất vui", "Cảm ơn", "Xin chào"
+- CẤM thêm thông tin không liên quan
+- CẤM hỏi ngoài câu hỏi quy định
+- CHỈ trả lời theo đúng 3 bước trên`;
 
         if (contents.length === 1) {
             contents[0].parts[0].text = systemPrompt + "\n\n" + contents[0].parts[0].text;
