@@ -71,7 +71,24 @@ export const scanDocumentWithGemini = async (history = [], newMessage = '', file
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
+        // Check if response has content
+        const contentType = response.headers.get('content-type');
+        const contentLength = response.headers.get('content-length');
+
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Webhook không trả về JSON. Kiểm tra "Respond to Webhook" node trong n8n.');
+        }
+
+        if (contentLength === '0') {
+            throw new Error('Webhook trả về empty response. Thêm "Respond to Webhook" node và cấu hình response body.');
+        }
+
         const result = await response.json();
+
+        // Check if result has required fields
+        if (!result || (!result.text && !result.data)) {
+            throw new Error('Response thiếu fields "text" hoặc "data". Kiểm tra format trong workflow.');
+        }
 
         // Backend returns: { data: [...], text: "..." } or { data: [...] }
         // Ensure we always return both text and data
@@ -85,21 +102,27 @@ export const scanDocumentWithGemini = async (history = [], newMessage = '', file
 
         // Return detailed error with setup instructions
         return {
-            text: `❌ LỖI KẾT NỐI WEBHOOK BACKEND\n\n` +
-                  `Chi tiết lỗi: ${error.message}\n\n` +
-                  `📋 CHECKLIST BẮT BUỘC:\n\n` +
-                  `1️⃣ Kích hoạt workflow n8n\n` +
-                  `   • Mở n8n workflow\n` +
-                  `   • Click "ACTIVE" (phải màu xanh)\n\n` +
-                  `2️⃣ Cấu hình CORS trong webhook node\n` +
-                  `   • Response Headers:\n` +
-                  `   • Access-Control-Allow-Origin: *\n` +
-                  `   • Access-Control-Allow-Methods: POST, OPTIONS\n` +
-                  `   • Access-Control-Allow-Headers: Content-Type\n\n` +
-                  `3️⃣ Test webhook URL:\n` +
+            text: `❌ LỖI WEBHOOK BACKEND: ${error.message}\n\n` +
+                  `📋 HƯỚNG DẪN FIX:\n\n` +
+                  `1️⃣ THÊM "Respond to Webhook" NODE\n` +
+                  `   • Kéo node "Respond to Webhook" vào workflow\n` +
+                  `   • Nối từ node cuối → Respond to Webhook\n` +
+                  `   • Response Body:\n` +
+                  `     {\n` +
+                  `       "text": "{{ $json.text }}",\n` +
+                  `       "data": {{ $json.data }}\n` +
+                  `     }\n\n` +
+                  `2️⃣ CẤU HÌNH CORS\n` +
+                  `   • Trong Respond to Webhook node\n` +
+                  `   • Options → Response Headers:\n` +
+                  `     {\n` +
+                  `       "Access-Control-Allow-Origin": "*",\n` +
+                  `       "Content-Type": "application/json"\n` +
+                  `     }\n\n` +
+                  `3️⃣ WORKFLOW PHẢI ACTIVE (màu xanh)\n\n` +
+                  `4️⃣ Test webhook:\n` +
                   `   ${WEBHOOK_URL}\n\n` +
-                  `4️⃣ Kiểm tra network/firewall\n\n` +
-                  `📖 Đọc hướng dẫn chi tiết: WEBHOOK_SETUP.md`,
+                  `📖 Chi tiết: WEBHOOK_SETUP.md`,
             data: []
         };
     }
