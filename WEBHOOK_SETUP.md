@@ -1,13 +1,15 @@
 # 🔧 Hướng Dẫn Cấu Hình n8n Webhook
 
-## ⚠️ Vấn Đề Hiện Tại
+## ⚠️ BẮT BUỘC PHẢI CẤU HÌNH WEBHOOK
 
-Hiện tại ứng dụng đang **tự động fallback** sang Gemini API trực tiếp vì webhook n8n chưa được cấu hình đúng.
+Ứng dụng **CHỈ hoạt động với n8n webhook**. Không có fallback.
 
-Bạn sẽ thấy thông báo:
+Nếu webhook chưa được cấu hình, bạn sẽ thấy lỗi:
 ```
-⚠️ [Đang dùng Gemini API trực tiếp do webhook chưa sẵn sàng]
+❌ LỖI KẾT NỐI WEBHOOK BACKEND
 ```
+
+**AI sẽ KHÔNG hoạt động** cho đến khi webhook được cấu hình đúng.
 
 ## ✅ Các Bước Kích Hoạt Webhook
 
@@ -88,19 +90,9 @@ fetch('http://n8n.genz-ai.click:5678/webhook/phan-cong', {
 }
 ```
 
-### Bước 5: Tắt Fallback (Optional)
+### Bước 5: Verify Hoạt Động
 
-Khi webhook đã hoạt động ổn định, bạn có thể tắt fallback:
-
-**File:** `/src/services/apiService.js`
-
-```javascript
-// Thay đổi từ:
-const USE_FALLBACK = true;
-
-// Thành:
-const USE_FALLBACK = false;
-```
+Khi webhook hoạt động, AI sẽ trả lời ngay lập tức không có lỗi.
 
 ## 🐛 Debugging
 
@@ -115,15 +107,13 @@ Khi mở DevTools (F12), bạn sẽ thấy:
 📥 Webhook response status: 200
 ```
 
-**Webhook lỗi + Fallback:**
+**Webhook lỗi:**
 ```
 🚀 Attempting to call webhook: http://n8n.genz-ai.click:5678/webhook/phan-cong
 📤 Sending request to webhook...
 ❌ Webhook error: Failed to fetch
-🔄 Falling back to direct Gemini API...
-⚠️  Webhook n8n chưa hoạt động. Đang dùng Gemini API trực tiếp.
-✅ Fallback succeeded!
 ```
+→ AI sẽ hiển thị error message với hướng dẫn fix
 
 ### Các Lỗi Thường Gặp
 
@@ -143,23 +133,16 @@ Khi mở DevTools (F12), bạn sẽ thấy:
 - **Nguyên nhân:** Lỗi trong n8n workflow
 - **Giải pháp:** Kiểm tra Executions tab trong n8n để xem lỗi chi tiết
 
-## 📊 Kiến Trúc Hiện Tại
+## 📊 Kiến Trúc Bắt Buộc
 
-### Với Fallback (Mặc định):
 ```
 Frontend
-  → Try n8n Webhook
-  → [If fails] Fallback to Gemini API ✅
-  → Return result
-```
-
-### Khi Webhook Hoạt Động:
-```
-Frontend
-  → n8n Webhook
+  → n8n Webhook (BẮT BUỘC)
   → Backend AI Processing
   → Return result
 ```
+
+**Không có fallback. Webhook phải hoạt động.**
 
 ## 📝 Request/Response Format
 
@@ -187,21 +170,21 @@ Frontend
 }
 ```
 
-## 🎯 Checklist
+## 🎯 Checklist (BẮT BUỘC)
 
-- [ ] Workflow đã được ACTIVE trong n8n
+- [ ] Workflow đã được ACTIVE trong n8n ⚠️ QUAN TRỌNG
 - [ ] Webhook URL đúng: `http://n8n.genz-ai.click:5678/webhook/phan-cong`
-- [ ] CORS headers đã được cấu hình
+- [ ] CORS headers đã được cấu hình ⚠️ QUAN TRỌNG
 - [ ] Test webhook thành công từ curl
 - [ ] Test webhook thành công từ browser console
-- [ ] Ứng dụng không còn hiện warning "đang dùng fallback"
+- [ ] AI chat hoạt động không có lỗi
 
 ## 💡 Tips
 
-1. **Development:** Để fallback = true để dev không bị gián đoạn
-2. **Production:** Đảm bảo webhook hoạt động, có thể tắt fallback
-3. **Monitoring:** Theo dõi console logs để biết webhook có hoạt động không
-4. **Testing:** Test thường xuyên để đảm bảo webhook không bị down
+1. **PHẢI cấu hình webhook trước khi sử dụng AI**
+2. **Kiểm tra n8n workflow ACTIVE** (màu xanh)
+3. **Monitoring:** Theo dõi console logs (F12) để debug
+4. **Testing:** Test webhook thường xuyên để đảm bảo uptime
 
 ## 🆘 Cần Hỗ Trợ?
 
@@ -213,4 +196,4 @@ Nếu vẫn gặp vấn đề:
 
 ---
 
-**Lưu ý:** Hiện tại ứng dụng vẫn hoạt động bình thường nhờ fallback mechanism. Webhook chỉ là optimization để centralize AI logic.
+**⚠️ LƯU Ý QUAN TRỌNG:** Ứng dụng CHỈ hoạt động khi webhook được cấu hình đúng. Không có fallback mechanism. AI sẽ không thể trích xuất dữ liệu nếu webhook chưa sẵn sàng.

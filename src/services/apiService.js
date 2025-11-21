@@ -1,16 +1,11 @@
 /**
  * API Service - Backend Webhook Integration
- * Handles all AI processing through n8n webhook instead of direct Gemini API calls
- * Falls back to direct Gemini API if webhook is unavailable
+ * Handles ALL AI processing through n8n webhook ONLY
+ * NO FALLBACK - Webhook must be configured and running
  */
-
-import { sendMessageToGemini as geminiDirectCall } from './geminiService.js';
 
 // Backend webhook URL for AI processing
 const WEBHOOK_URL = "http://n8n.genz-ai.click:5678/webhook/phan-cong";
-
-// Fallback to gemini if webhook fails
-const USE_FALLBACK = true;
 
 /**
  * Scans document/text input using backend AI webhook
@@ -88,30 +83,23 @@ export const scanDocumentWithGemini = async (history = [], newMessage = '', file
     } catch (error) {
         console.error('❌ Webhook error:', error.message);
 
-        // Fallback to direct Gemini API if webhook fails
-        if (USE_FALLBACK) {
-            console.log('🔄 Falling back to direct Gemini API...');
-            console.log('⚠️  Webhook n8n chưa hoạt động. Đang dùng Gemini API trực tiếp.');
-            try {
-                const result = await geminiDirectCall(history, newMessage, fileObject);
-                console.log('✅ Fallback succeeded!');
-                // Add notice to the response
-                if (result && result.text) {
-                    result.text = `⚠️ [Đang dùng Gemini API trực tiếp do webhook chưa sẵn sàng]\n\n${result.text}`;
-                }
-                return result;
-            } catch (fallbackError) {
-                console.error('❌ Fallback also failed:', fallbackError);
-                return {
-                    text: `❌ Lỗi kết nối cả Webhook và Gemini API\n\nWebhook: ${error.message}\nGemini: ${fallbackError.message}`,
-                    data: []
-                };
-            }
-        }
-
-        // Return user-friendly error message in Vietnamese
+        // Return detailed error with setup instructions
         return {
-            text: `❌ Lỗi kết nối Backend: ${error.message}\n\nVui lòng kiểm tra:\n- Webhook n8n đang chạy (phải ACTIVE)\n- URL: ${WEBHOOK_URL}\n- Kết nối mạng\n- CORS configuration trong n8n`,
+            text: `❌ LỖI KẾT NỐI WEBHOOK BACKEND\n\n` +
+                  `Chi tiết lỗi: ${error.message}\n\n` +
+                  `📋 CHECKLIST BẮT BUỘC:\n\n` +
+                  `1️⃣ Kích hoạt workflow n8n\n` +
+                  `   • Mở n8n workflow\n` +
+                  `   • Click "ACTIVE" (phải màu xanh)\n\n` +
+                  `2️⃣ Cấu hình CORS trong webhook node\n` +
+                  `   • Response Headers:\n` +
+                  `   • Access-Control-Allow-Origin: *\n` +
+                  `   • Access-Control-Allow-Methods: POST, OPTIONS\n` +
+                  `   • Access-Control-Allow-Headers: Content-Type\n\n` +
+                  `3️⃣ Test webhook URL:\n` +
+                  `   ${WEBHOOK_URL}\n\n` +
+                  `4️⃣ Kiểm tra network/firewall\n\n` +
+                  `📖 Đọc hướng dẫn chi tiết: WEBHOOK_SETUP.md`,
             data: []
         };
     }
