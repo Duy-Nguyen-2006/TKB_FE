@@ -31,7 +31,9 @@ const SmartImport = ({ onImportSuccess }) => {
       handleFileUpload(e.target.files[0]);
     }
   };
+  // ... imports giữ nguyên
 
+  // Tìm dòng handleFileUpload và sửa đoạn axios.post:
   const handleFileUpload = async (file) => {
     setIsLoading(true);
     setStatus(null);
@@ -41,12 +43,15 @@ const SmartImport = ({ onImportSuccess }) => {
     formData.append('file', file);
 
     try {
-      // Requirement: "On success, validate response is an array and call onImportSuccess"
-      const response = await axios.post('https://n8n.genz-ai.click/webhook/parse-schedule', formData, {
+      // SỬA LINK Ở ĐÂY, THẰNG ĐẦN:
+      const response = await axios.post('https://7jk103q70xnk.ezbase.vn/webhook/phan-cong', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
+
+      // ... phần còn lại giữ nguyên
+
 
       if (Array.isArray(response.data)) {
         onImportSuccess(response.data);
