@@ -1,34 +1,17 @@
-    /**
- * API Service - Backend Webhook Integration
- * Handles ALL AI processing through n8n webhook ONLY
- * NO FALLBACK - Webhook must be configured and running
- */
+import axios from 'axios'; // QUAN TRỌNG: Dòng này phải ở đầu file
 
-// Backend webhook URL for AI processing
-const WEBHOOK_URL = "https://7jk103q70xnk.ezbase.vn/webhook/phan-cong";
+// Backend webhook URL for AI processing (Chat)
+const CHAT_WEBHOOK_URL = "https://7jk103q70xnk.ezbase.vn/webhook/phan-cong";
 
 /**
  * Scans document/text input using backend AI webhook
- * Maintains conversation context for better AI responses
- *
- * @param {Array} history - Conversation history [{role: 'user'|'model', text: '...'}, ...]
- * @param {string} newMessage - The new user message
- * @param {File|null} fileObject - Optional file object (image) to process
- * @returns {Promise<{text: string, data: Array}>} - Returns AI response text and extracted data
  */
 export const scanDocumentWithGemini = async (history = [], newMessage = '', fileObject = null) => {
     if (!newMessage && !fileObject) {
-        return {
-            text: "Vui lòng nhập nội dung hoặc tải lên ảnh.",
-            data: []
-        };
+        return { text: "Vui lòng nhập nội dung hoặc tải lên ảnh.", data: [] };
     }
 
     try {
-        console.log('🚀 Attempting to call webhook:', WEBHOOK_URL);
-
-        // Build conversation context for the webhook
-        // Format: "User: ...\nAI: ...\nUser: ..."
         let conversationContext = '';
         if (history && history.length > 0) {
             conversationContext = history.map(msg => {
@@ -38,114 +21,44 @@ export const scanDocumentWithGemini = async (history = [], newMessage = '', file
             conversationContext += '\n';
         }
 
-        // Append new message
         const fullText = conversationContext + `Người dùng: ${newMessage}`;
+        const requestBody = { text: fullText };
 
-        // Prepare request body
-        const requestBody = {
-            text: fullText,
-        };
-
-        // If file is provided, convert to base64 and include in request
         if (fileObject) {
-            console.log('📷 Converting image to base64...');
             const base64Image = await fileToBase64(fileObject);
             requestBody.image = base64Image;
             requestBody.mimeType = fileObject.type;
         }
 
-        console.log('📤 Sending request to webhook...');
-
-        // Call backend webhook
-        const response = await fetch(WEBHOOK_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody),
+        const response = await axios.post(CHAT_WEBHOOK_URL, requestBody, {
+            headers: { 'Content-Type': 'application/json' }
         });
 
-        console.log('📥 Webhook response status:', response.status);
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        // Check if response has content
-        const contentType = response.headers.get('content-type');
-        const contentLength = response.headers.get('content-length');
-
-        if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Webhook không trả về JSON. Kiểm tra "Respond to Webhook" node trong n8n.');
-        }
-
-        if (contentLength === '0') {
-            throw new Error('Webhook trả về empty response. Thêm "Respond to Webhook" node và cấu hình response body.');
-        }
-
-        const result = await response.json();
-
-        // Handle different response formats from n8n:
-        // Format 1: {text: "...", data: [...]} - ideal format
-        // Format 2: [...] - direct array (current n8n setup)
-
+        const result = response.data;
         let extractedData = [];
         let responseText = '';
 
         if (Array.isArray(result)) {
-            // n8n trả về array trực tiếp
             extractedData = result;
             responseText = formatDataAsText(result);
         } else if (result && typeof result === 'object') {
-            // n8n trả về object {text, data}
             extractedData = result.data || [];
             responseText = result.text || formatDataAsText(result.data);
         } else {
-            throw new Error('Response format không hợp lệ. Cần array hoặc {text, data}');
+            throw new Error('Response format không hợp lệ.');
         }
 
-        // Ensure we always return both text and data
-        return {
-            text: responseText,
-            data: extractedData
-        };
+        return { text: responseText, data: extractedData };
 
     } catch (error) {
-        console.error('❌ Webhook error:', error.message);
-
-        // Return detailed error with setup instructions
+        console.error('❌ Webhook error:', error);
         return {
-            text: `❌ LỖI WEBHOOK BACKEND: ${error.message}\n\n` +
-                  `📋 HƯỚNG DẪN FIX:\n\n` +
-                  `1️⃣ THÊM "Respond to Webhook" NODE\n` +
-                  `   • Kéo node "Respond to Webhook" vào workflow\n` +
-                  `   • Nối từ node cuối → Respond to Webhook\n` +
-                  `   • Response Body:\n` +
-                  `     {\n` +
-                  `       "text": "{{ $json.text }}",\n` +
-                  `       "data": {{ $json.data }}\n` +
-                  `     }\n\n` +
-                  `2️⃣ CẤU HÌNH CORS\n` +
-                  `   • Trong Respond to Webhook node\n` +
-                  `   • Options → Response Headers:\n` +
-                  `     {\n` +
-                  `       "Access-Control-Allow-Origin": "*",\n` +
-                  `       "Content-Type": "application/json"\n` +
-                  `     }\n\n` +
-                  `3️⃣ WORKFLOW PHẢI ACTIVE (màu xanh)\n\n` +
-                  `4️⃣ Test webhook:\n` +
-                  `   ${WEBHOOK_URL}\n\n` +
-                  `📖 Chi tiết: WEBHOOK_SETUP.md`,
+            text: `❌ Lỗi: ${error.message}. Kiểm tra Console (F12) để biết chi tiết.`,
             data: []
         };
     }
 };
 
-/**
- * Converts file to base64 string
- * @param {File} file - File object to convert
- * @returns {Promise<string>} - Base64 encoded string
- */
 const fileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -158,26 +71,33 @@ const fileToBase64 = (file) => {
     });
 };
 
-/**
- * Formats extracted data array as readable text
- * @param {Array} data - Array of assignment objects
- * @returns {string} - Formatted text representation
- */
 const formatDataAsText = (data) => {
-    if (!data || data.length === 0) {
-        return "Không tìm thấy dữ liệu.";
-    }
-
+    if (!data || data.length === 0) return "Không tìm thấy dữ liệu.";
     let text = "Dữ liệu đã trích xuất:\n\n";
     data.forEach(item => {
         text += `${item.teacher} - ${item.subject} - ${item.class} - ${item.periods}\n`;
     });
     text += "\nBạn có cần chỉnh sửa gì không? (Nếu đã ổn, hãy trả lời 'OK')";
-
     return text;
 };
 
-/**
- * Alternative export name for backward compatibility
- */
 export const sendMessageToGemini = scanDocumentWithGemini;
+
+// === HÀM GỌI API XẾP LỊCH (New) ===
+export const generateSchedule = async (payload) => {
+    try {
+        // THAY URL NÀY BẰNG PRODUCTION URL CỦA NODE WEBHOOK (N8N)
+        // Dựa trên ảnh của mày: https://7jk103q70xnk.ezbase.vn/webhook/constraint
+        // Hoặc URL Backend nodejs nếu mày dựng server riêng
+        const URL = "https://7jk103q70xnk.ezbase.vn/webhook/constraint";
+
+        const response = await axios.post(URL, payload, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        return response.data;
+    } catch (error) {
+        console.error("Lỗi xếp lịch:", error);
+        throw error;
+    }
+};
