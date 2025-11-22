@@ -89,7 +89,7 @@ export const generateSchedule = async (payload) => {
         // THAY URL NÀY BẰNG PRODUCTION URL CỦA NODE WEBHOOK (N8N)
         // Dựa trên ảnh của mày: https://7jk103q70xnk.ezbase.vn/webhook/constraint
         // Hoặc URL Backend nodejs nếu mày dựng server riêng
-        const URL = "https://7jk103q70xnk.ezbase.vn/webhook/constraint";
+        const URL = "https://7jk103q70xnk.ezbase.vn/webhook-test/constraint";
 
         const response = await axios.post(URL, payload, {
             headers: { 'Content-Type': 'application/json' }
