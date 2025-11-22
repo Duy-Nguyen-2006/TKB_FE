@@ -4,10 +4,10 @@ import { Trash2, Plus, Zap } from 'lucide-react';
 import AIChatSidebar from './AIChatSidebar';
 
 const Step1Assignments = () => {
-    const { assignments, addAssignment, removeAssignment } = useAppContext();
+    // Lấy thêm hàm importData từ context
+    const { assignments, addAssignment, removeAssignment, importData } = useAppContext();
     const [newRow, setNewRow] = useState({ teacher: '', subject: '', class: '', periods: '' });
 
-    // AI Chat Sidebar State
     const [isChatOpen, setIsChatOpen] = useState(false);
 
     const handleInputChange = (e) => {
@@ -28,13 +28,13 @@ const Step1Assignments = () => {
         }
     };
 
+    // SỬA ĐOẠN NÀY: Dùng importData thay vì forEach addAssignment
     const handleImportData = (data) => {
-        data.forEach(item => {
-            addAssignment({ ...item, periods: Number(item.periods) });
-        });
+        importData(data); // Gọi 1 phát ăn ngay, tự gộp, tự sort
     };
 
     return (
+        // ... (Phần giao diện giữ nguyên không đổi) ...
         <div className="flex h-full overflow-hidden">
             {/* Main Content Area */}
             <div className={`flex-1 flex flex-col h-full transition-all duration-300 ${isChatOpen ? 'mr-0' : ''}`}>
